@@ -10,7 +10,7 @@ import (
 )
 
 func beforeGroupTest() {
-	utils.PMan = utils.NewPman()
+	utils.PMan = utils.NewPman("test.properties")
 	ConnectToMongo(context.Background(), "mongodb://"+utils.PMan.Get("mongo_host").(string)+":"+utils.PMan.Get("mongo_port").(string), utils.PMan.Get("mongo_db_name").(string))
 	err := groupCollection.Drop(context.Background())
 	if err != nil {

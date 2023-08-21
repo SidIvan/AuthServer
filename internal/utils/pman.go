@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/gookit/properties"
 	"os"
 	"path/filepath"
@@ -14,9 +15,9 @@ var (
 
 var PMan *properties.Parser
 
-func NewPman() *properties.Parser {
+func NewPman(fileName string) *properties.Parser {
 	pman := properties.NewParser(properties.ParseEnv, properties.ParseInlineSlice)
-	fileData, err := os.ReadFile(RootPath + "/../../resources/properties/application.properties")
+	fileData, err := os.ReadFile(fmt.Sprintf("%s/../../resources/properties/%s", RootPath, fileName))
 	if err != nil {
 		panic("Properties file does not found")
 	}

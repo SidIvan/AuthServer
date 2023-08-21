@@ -1,8 +1,11 @@
+//TODO: simplify errors
+
 package repo
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,6 +13,7 @@ import (
 
 var serviceCollection *mongo.Collection
 
+// TODO: change slices to sets
 type ServiceInfo struct {
 	Name            string   `bson:"Name"`
 	BaseUri         string   `bson:"BaseUri"`
@@ -18,15 +22,7 @@ type ServiceInfo struct {
 	Ruchkas         []Ruchka `bson:"Ruchkas"`
 }
 
-type Ruchka struct {
-	Name            string
-	Uri             string
-	Method          string
-	AllowedAccounts []string
-	AllowedGroups   []string
-}
-
-func isServiceExists(name string) bool {
+func isServiceExist(name string) bool {
 	res := serviceCollection.FindOne(context.Background(), bson.D{{"Name", name}})
 	if res.Err() == mongo.ErrNoDocuments {
 		return false
@@ -36,8 +32,73 @@ func isServiceExists(name string) bool {
 	return true
 }
 
+// TODO: test
+func (s *ServiceInfo) isRuchkaExist(rName string) bool {
+	for _, ruchka := range s.Ruchkas {
+		if ruchka.Name == rName {
+			return true
+		}
+	}
+	return false
+}
+
+// TODO: test
+func (s *ServiceInfo) hasPermission(login string) (bool, error) {
+	account, err := FindAccount(login)
+	if err != nil {
+		return false, err
+	}
+	return s.hasPermissionAcc(&account)
+}
+
+// TODO: test
+func (s *ServiceInfo) hasPermissionAcc(account *AccountInfo) (bool, error) {
+	for _, allowedAcc := range s.AllowedAccounts {
+		if allowedAcc == account.Login {
+			return true, nil
+		}
+	}
+	for _, group := range account.Groups {
+		for _, allowedGroup := range s.AllowedGroups {
+			if group == allowedGroup {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+// TODO: test
+func (s *ServiceInfo) hasGroupPermission(group string) (bool, error) {
+	for _, allowedGroup := range s.AllowedGroups {
+		if group == allowedGroup {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// TODO: test
+func (s *ServiceInfo) hasPermissionToRuchka(rName string, login string) (bool, error) {
+	account, err := FindAccount(login)
+	if err != nil {
+		return false, err
+	}
+	return s.hasPermissionToRuchkaAcc(rName, &account)
+}
+
+// TODO: test
+func (s *ServiceInfo) hasPermissionToRuchkaAcc(rName string, account *AccountInfo) (bool, error) {
+	for _, ruchka := range s.Ruchkas {
+		if ruchka.Name == rName {
+			return ruchka.hasPermission(account), nil
+		}
+	}
+	return false, errors.New(fmt.Sprintf("ruchka \"%s\" does not exist", rName))
+}
+
 func CreateService(name string, baseUri string) (string, error) {
-	if isServiceExists(name) {
+	if isServiceExist(name) {
 		return "", errors.New("service \"" + name + "\" already exists")
 	}
 	res, err := serviceCollection.InsertOne(context.Background(), ServiceInfo{
@@ -51,7 +112,7 @@ func CreateService(name string, baseUri string) (string, error) {
 }
 
 func FindService(name string) (*ServiceInfo, error) {
-	if !isServiceExists(name) {
+	if !isServiceExist(name) {
 		return nil, errors.New("Service \"" + name + "\" does not exist")
 	}
 	res := serviceCollection.FindOne(context.Background(), bson.D{
@@ -67,31 +128,93 @@ func FindService(name string) (*ServiceInfo, error) {
 	return &serviceInfo, nil
 }
 
-func AddRuchka(name string, ruchka Ruchka) error {
-	if !isServiceExists(name) {
-		return errors.New("service \"" + name + "\"does not exists")
+// TODO: test
+func PutService(sName string, serviceInfo *ServiceInfo) error {
+	if !isServiceExist(sName) {
+		return errors.New("service \"" + sName + "\"does not exists")
 	}
-	service, err := FindService(name)
-	if err != nil {
-		return err
-	}
-	service.Ruchkas = append(service.Ruchkas, ruchka)
-	_, err = serviceCollection.UpdateOne(context.Background(), bson.D{{"Name", name}}, bson.D{{"$set", service}})
+	_, err := serviceCollection.UpdateOne(context.Background(), bson.D{{"Name", sName}}, bson.D{{"$set", serviceInfo}})
 	return err
 }
 
-func DeleteRuchka(name string, ruchkaName string) error {
-	service, err := FindService(name)
+// TODO: test
+func AddAllowedAccount(sName string, login string) error {
+	if !isAccountExist(login) {
+		return errors.New(fmt.Sprintf("account \"%s\" does not exist", login))
+	}
+	if !isServiceExist(sName) {
+		return errors.New(fmt.Sprintf("service \"%s\" does not exist", sName))
+	}
+	service, err := FindService(sName)
+	if res, _ := service.hasPermission(login); res {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(service.Ruchkas); i++ {
-		if service.Ruchkas[i].Name == ruchkaName {
-			service.Ruchkas[i] = service.Ruchkas[len(service.Ruchkas)-1]
-			service.Ruchkas = service.Ruchkas[:len(service.Ruchkas)-1]
-			_, err = serviceCollection.UpdateOne(context.Background(), bson.D{{"Name", name}}, bson.D{{"$set", service}})
-			return err
+	service.AllowedAccounts = append(service.AllowedAccounts, login)
+	return PutService(sName, service)
+}
+
+// TODO: test
+func DeleteAllowedAccount(sName string, login string) error {
+	if !isAccountExist(login) {
+		return errors.New(fmt.Sprintf("account \"%s\" does not exist", login))
+	}
+	if !isServiceExist(sName) {
+		return errors.New(fmt.Sprintf("service \"%s\" does not exist", sName))
+	}
+	service, err := FindService(sName)
+	if err != nil {
+		return err
+	}
+	for i := range service.AllowedAccounts {
+		if service.AllowedAccounts[i] == login {
+			service.AllowedAccounts[i] = service.AllowedAccounts[len(service.AllowedAccounts)-1]
+			service.AllowedAccounts = service.AllowedAccounts[:len(service.AllowedAccounts)-1]
+			return nil
 		}
 	}
-	return errors.New("ruchka \"" + ruchkaName + "\" not found")
+	return errors.New(fmt.Sprintf("account \"%s\" already has no permitions to service \"%s\"", login, sName))
+}
+
+// TODO: test
+func AddAllowedGroup(sName string, group string) error {
+	if !isGroupExists(group) {
+		return errors.New(fmt.Sprintf("group \"%s\" does not exist", group))
+	}
+	if !isServiceExist(sName) {
+		return errors.New(fmt.Sprintf("service \"%s\" does not exist", sName))
+	}
+	service, err := FindService(sName)
+	if err != nil {
+		return err
+	}
+	if res, _ := service.hasGroupPermission(group); res {
+		return nil
+	}
+	service.AllowedGroups = append(service.AllowedGroups, group)
+	return PutService(sName, service)
+}
+
+// TODO: test
+func DeleteAllowedGroup(sName string, group string) error {
+	if !isGroupExists(group) {
+		return errors.New(fmt.Sprintf("group \"%s\" does not exist", group))
+	}
+	if !isServiceExist(sName) {
+		return errors.New(fmt.Sprintf("service \"%s\" does not exist", sName))
+	}
+	service, err := FindService(sName)
+	if err != nil {
+		return err
+	}
+	for i := range service.AllowedGroups {
+		if service.AllowedGroups[i] == group {
+			service.AllowedGroups[i] = service.AllowedGroups[len(service.AllowedGroups)-1]
+			service.AllowedGroups = service.AllowedGroups[:len(service.AllowedGroups)-1]
+			return nil
+		}
+	}
+	return errors.New(fmt.Sprintf("group \"%s\" already has no permitions to service \"%s\"", group, sName))
 }

@@ -16,7 +16,7 @@ type AccountInfo struct {
 	Groups   []string `bson:"Groups"`
 }
 
-func isAccountExists(login string) bool {
+func isAccountExist(login string) bool {
 	res := accountCollection.FindOne(context.Background(), bson.D{{"Login", login}})
 	if res.Err() == mongo.ErrNoDocuments {
 		return false
@@ -27,7 +27,7 @@ func isAccountExists(login string) bool {
 }
 
 func CreateAccount(login string, password string) (string, error) {
-	if isAccountExists(login) {
+	if isAccountExist(login) {
 		return "", errors.New("Login " + login + " already using")
 	}
 	res, err := accountCollection.InsertOne(context.Background(), AccountInfo{
@@ -63,7 +63,7 @@ func DeleteAccount(login string) error {
 }
 
 func FindAccount(login string) (AccountInfo, error) {
-	if !isAccountExists(login) {
+	if !isAccountExist(login) {
 		return AccountInfo{}, errors.New("Account with login \"" + login + "\" does not exist")
 	}
 	res := accountCollection.FindOne(context.Background(), bson.D{

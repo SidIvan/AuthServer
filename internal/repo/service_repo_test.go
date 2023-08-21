@@ -10,7 +10,7 @@ import (
 )
 
 func beforeServiceTest() {
-	utils.PMan = utils.NewPman()
+	utils.PMan = utils.NewPman("test.properties")
 	ConnectToMongo(context.Background(), "mongodb://"+utils.PMan.Get("mongo_host").(string)+":"+utils.PMan.Get("mongo_port").(string), utils.PMan.Get("mongo_db_name").(string))
 	err := serviceCollection.Drop(context.Background())
 	if err != nil {
@@ -24,10 +24,10 @@ func TestIsServiceExists(t *testing.T) {
 	if err != nil {
 		t.Errorf("Service1 creation fail")
 	}
-	if !isServiceExists("service1") {
+	if !isServiceExist("service1") {
 		t.Errorf("Did not find service \"service1\" in DB")
 	}
-	if isServiceExists("service2") {
+	if isServiceExist("service2") {
 		t.Errorf("Found service \"service2\" that does not exist")
 	}
 }

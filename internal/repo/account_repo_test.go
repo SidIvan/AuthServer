@@ -11,7 +11,7 @@ import (
 )
 
 func beforeAccountTest() {
-	utils.PMan = utils.NewPman()
+	utils.PMan = utils.NewPman("test.properties")
 	ConnectToMongo(context.Background(), "mongodb://"+utils.PMan.Get("mongo_host").(string)+":"+utils.PMan.Get("mongo_port").(string), utils.PMan.Get("mongo_db_name").(string))
 	err := accountCollection.Drop(context.Background())
 	if err != nil {
@@ -44,10 +44,10 @@ func TestIsAccountExists(t *testing.T) {
 	if err != nil {
 		t.Errorf("Account1 creation fail")
 	}
-	if !isAccountExists("login1") {
+	if !isAccountExist("login1") {
 		t.Errorf("Did not find account with login \"login1\" in DB")
 	}
-	if isAccountExists("login2") {
+	if isAccountExist("login2") {
 		t.Errorf("Found account with login \"login2\" that does not exist")
 	}
 }
