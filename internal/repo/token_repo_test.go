@@ -4,7 +4,6 @@ import (
 	"AuthServer/internal/utils"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"testing"
 )
@@ -30,9 +29,8 @@ func TestCreateRefresh(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	token, err := jwt.ParseWithClaims(val, &Payload{}, func(t *jwt.Token) (interface{}, error) {
-		return signSecret, nil
+		return SignSecret, nil
 	})
-	fmt.Println(token.Claims)
 	if !token.Valid {
 		t.Errorf("invalid token created")
 	}

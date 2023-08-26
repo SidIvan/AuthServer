@@ -1,35 +1,81 @@
 package route
 
 import (
-	"AuthServer/internal/logic"
-	"fmt"
+	"AuthServer/internal/dto"
+	"AuthServer/internal/utils"
+	"encoding/json"
 	"github.com/gorilla/mux"
+	"io"
 	"log"
 	"net/http"
-	"strings"
 )
 
 func NewExternalRouter() *mux.Router {
+	thisServiceName = utils.PMan.Get("this_service_name").(string)
 	router := mux.NewRouter()
-	router.HandleFunc("/login", login)
-	//router.HandleFunc("/auth", auth).Methods("GET")
+	router.
+		HandleFunc("/registration", registrationHandler).
+		Methods(http.MethodPost).
+		Headers("content-type", "application/json")
+	router.
+		HandleFunc("/authorization", authorizationHandler).
+		Methods(http.MethodGet).
+		Headers("content-type", "application/json",
+			"Oauth", "")
 	return router
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
-	authInfo := strings.Split(r.Header.Get("Oauth"), ":")
-	if len(authInfo) != 3 {
-		w.WriteHeader(http.StatusExpectationFailed)
-		_, err := fmt.Fprintf(w, "Invalid args count, must be 3, was %d", len(authInfo))
-		if err != nil {
-			log.Print(err)
-		}
+// TODO: test
+func authorizationHandler(w http.ResponseWriter, r *http.Request) {
+	var authInfo dto.AuthIn
+	body, err := io.ReadAll(r.Body)
+	if err != nil && err != io.EOF {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logic.Login(authInfo[0], authInfo[1], authInfo[2])
+	err = json.Unmarshal(body, &authInfo)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	tokenValue := r.Header.Get("Oauth")
+	rType, body := authorization(authInfo, tokenValue).RawBody()
+	if rType == dto.OkR {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusBadGateway)
+	}
+	numBytes, err := w.Write(body)
+	if err != nil || numBytes != len(body) {
+		log.Println("not full response sent")
+	}
 }
 
-//func auth(w http.ResponseWriter, r *http.Request) {
-//	oauthToken := r.Header.Get("Oauth")
-//	fmt.Fprintf(w, logic.DecodeToken(oauthToken))
-//}
+// TODO: test
+func registrationHandler(w http.ResponseWriter, r *http.Request) {
+	var regInfo dto.RegistrationIn
+	body, err := io.ReadAll(r.Body)
+	if err != nil && err != io.EOF {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = json.Unmarshal(body, &regInfo)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	rType, body := registration(regInfo).RawBody()
+	if rType == dto.OkR {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusBadGateway)
+	}
+	numBytes, err := w.Write(body)
+	if err != nil || numBytes != len(body) {
+		log.Println("not full response sent")
+	}
+}

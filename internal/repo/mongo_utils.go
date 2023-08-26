@@ -19,7 +19,7 @@ const (
 	groupCollectionName    = "group"
 	serviceCollectionName  = "service"
 	refreshCollectionName  = "refresh"
-	accessCollectionName   = "access"
+	accessCollectionName   = "accessC"
 	bannedCollectionName   = "banned"
 )
 
@@ -44,9 +44,13 @@ func ConnectToMongo(ctx context.Context, uri string, dbName string) {
 		groupCollection = Db.Collection(groupCollectionName)
 		serviceCollection = Db.Collection(serviceCollectionName)
 		refreshCollection = Db.Collection(refreshCollectionName)
-		accountCollection = Db.Collection(accessCollectionName)
+		accessCollection = Db.Collection(accessCollectionName)
 		bannedCollection = Db.Collection(bannedCollectionName)
 		defaultRefreshTtl, err = strconv.ParseInt(utils.PMan.Get("default_refresh_ttl_ms").(string), 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		defaultAccessTtl, err = strconv.ParseInt(utils.PMan.Get("default_access_ttl_ms").(string), 10, 64)
 		if err != nil {
 			panic(err)
 		}
@@ -54,12 +58,17 @@ func ConnectToMongo(ctx context.Context, uri string, dbName string) {
 		if err != nil {
 			panic(err)
 		}
-		signSecret = []byte(utils.PMan.Get("HMAC_SECRET_KEY").(string))
+		SignSecret = []byte(utils.PMan.Get("HMAC_SECRET_KEY").(string))
 		return
 	}
 	log.Panic("Connection to mongoDb was not set")
 }
 
 func DropDb() {
-	Db.Drop(context.Background())
+	accessCollection.Drop(context.TODO())
+	refreshCollection.Drop(context.TODO())
+	accountCollection.Drop(context.TODO())
+	serviceCollection.Drop(context.TODO())
+	bannedCollection.Drop(context.TODO())
+	groupCollection.Drop(context.TODO())
 }
