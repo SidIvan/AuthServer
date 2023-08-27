@@ -27,9 +27,6 @@ func isAllowed(tokenValue string, ruchkaName string) bool {
 
 // TODO: test
 func authorization(authIn dto.AuthIn) dto.Response {
-	if authIn.Service == ThisServiceName {
-
-	}
 	token, err := repo.ParseToken(authIn.Token)
 	if err != nil {
 		return dto.NewErrorOut("invalid token")

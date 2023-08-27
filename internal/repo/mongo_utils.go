@@ -18,7 +18,6 @@ var (
 
 const (
 	NUM_CONNECTION_RETRIES = 3
-	CONNECTION_TIMEOUT_SEC = 20 * time.Second
 	accountCollectionName  = "account"
 	groupCollectionName    = "group"
 	serviceCollectionName  = "service"
