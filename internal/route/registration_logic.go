@@ -5,13 +5,13 @@ import (
 	"AuthServer/internal/repo"
 )
 
-var thisServiceName string
+var ThisServiceName string
 
 // TODO: test
 func registration(regInfo dto.RegistrationIn) dto.Response {
 	payload := repo.Payload{
 		Login:   regInfo.Login,
-		Service: thisServiceName,
+		Service: ThisServiceName,
 	}
 	_, err := repo.CreateAccount(regInfo.Login, regInfo.Password)
 	if err != nil {

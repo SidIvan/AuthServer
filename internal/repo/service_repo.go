@@ -14,7 +14,7 @@ import (
 var serviceCollection *mongo.Collection
 
 // TODO: change slices to sets
-type ServiceInfo struct {
+type Service struct {
 	Name            string   `bson:"Name"`
 	BaseUri         string   `bson:"BaseUri"`
 	AllowedAccounts []string `bson:"AllowedAccounts"`
@@ -33,7 +33,7 @@ func isServiceExist(name string) bool {
 }
 
 // TODO: test
-func (s *ServiceInfo) isRuchkaExist(rName string) bool {
+func (s *Service) isRuchkaExist(rName string) bool {
 	for _, ruchka := range s.Ruchkas {
 		if ruchka.Name == rName {
 			return true
@@ -43,7 +43,7 @@ func (s *ServiceInfo) isRuchkaExist(rName string) bool {
 }
 
 // TODO: test
-func (s *ServiceInfo) hasPermission(login string) (bool, error) {
+func (s *Service) hasPermission(login string) (bool, error) {
 	account, err := FindAccount(login)
 	if err != nil {
 		return false, err
@@ -52,7 +52,7 @@ func (s *ServiceInfo) hasPermission(login string) (bool, error) {
 }
 
 // TODO: test
-func (s *ServiceInfo) hasPermissionAcc(account *AccountInfo) (bool, error) {
+func (s *Service) hasPermissionAcc(account *AccountInfo) (bool, error) {
 	for _, allowedAcc := range s.AllowedAccounts {
 		if allowedAcc == account.Login {
 			return true, nil
@@ -69,7 +69,7 @@ func (s *ServiceInfo) hasPermissionAcc(account *AccountInfo) (bool, error) {
 }
 
 // TODO: test
-func (s *ServiceInfo) hasGroupPermission(group string) (bool, error) {
+func (s *Service) hasGroupPermission(group string) (bool, error) {
 	for _, allowedGroup := range s.AllowedGroups {
 		if group == allowedGroup {
 			return true, nil
@@ -79,7 +79,7 @@ func (s *ServiceInfo) hasGroupPermission(group string) (bool, error) {
 }
 
 // TODO: test
-func (s *ServiceInfo) hasPermissionToRuchka(rName string, login string) (bool, error) {
+func (s *Service) hasPermissionToRuchka(rName string, login string) (bool, error) {
 	account, err := FindAccount(login)
 	if err != nil {
 		return false, err
@@ -88,7 +88,7 @@ func (s *ServiceInfo) hasPermissionToRuchka(rName string, login string) (bool, e
 }
 
 // TODO: test
-func (s *ServiceInfo) hasPermissionToRuchkaAcc(rName string, account *AccountInfo) (bool, error) {
+func (s *Service) hasPermissionToRuchkaAcc(rName string, account *AccountInfo) (bool, error) {
 	for _, ruchka := range s.Ruchkas {
 		if ruchka.Name == rName {
 			return ruchka.hasPermission(account), nil
@@ -101,7 +101,7 @@ func CreateService(name string, baseUri string) (string, error) {
 	if isServiceExist(name) {
 		return "", errors.New("service \"" + name + "\" already exists")
 	}
-	res, err := serviceCollection.InsertOne(context.Background(), ServiceInfo{
+	res, err := serviceCollection.InsertOne(context.Background(), Service{
 		Name:    name,
 		BaseUri: baseUri,
 	})
@@ -111,7 +111,7 @@ func CreateService(name string, baseUri string) (string, error) {
 	return res.InsertedID.(primitive.ObjectID).Hex(), nil
 }
 
-func FindService(name string) (*ServiceInfo, error) {
+func FindService(name string) (*Service, error) {
 	if !isServiceExist(name) {
 		return nil, errors.New("Service \"" + name + "\" does not exist")
 	}
@@ -121,7 +121,7 @@ func FindService(name string) (*ServiceInfo, error) {
 	if res.Err() != nil {
 		return nil, res.Err()
 	}
-	var serviceInfo ServiceInfo
+	var serviceInfo Service
 	if res.Decode(&serviceInfo) != nil {
 		return nil, errors.New("decoding failed")
 	}
@@ -129,11 +129,45 @@ func FindService(name string) (*ServiceInfo, error) {
 }
 
 // TODO: test
-func PutService(sName string, serviceInfo *ServiceInfo) error {
+func PutService(sName string, serviceInfo *Service) error {
 	if !isServiceExist(sName) {
 		return errors.New("service \"" + sName + "\"does not exists")
 	}
 	_, err := serviceCollection.UpdateOne(context.Background(), bson.D{{"Name", sName}}, bson.D{{"$set", serviceInfo}})
+	return err
+}
+
+// TODO: test
+func DeleteService(sName string) error {
+	service, err := FindService(sName)
+	if err != nil {
+		return err
+	}
+	err = session.StartTransaction()
+	if err != nil {
+		return err
+	}
+	err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) error {
+		for _, ruchka := range service.Ruchkas {
+			err = DeleteRuchka(sName, ruchka.Name)
+			if err != nil {
+				return err
+			}
+		}
+		_, err := serviceCollection.DeleteOne(context.Background(), bson.D{{"Name", sName}})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		errAbort := session.AbortTransaction(context.TODO())
+		if errAbort != nil {
+			panic(errAbort)
+		}
+		return err
+	}
+	err = session.CommitTransaction(context.TODO())
 	return err
 }
 

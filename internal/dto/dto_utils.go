@@ -25,7 +25,25 @@ func NewErrorOut(message string) ErrorOut {
 	}
 }
 
+type OkOut struct {
+	Result ResponseType `json:"type"`
+}
+
+func NewOkOut() Response {
+	return OkOut{
+		Result: OkR,
+	}
+}
+
 func (r ErrorOut) RawBody() (ResponseType, []byte) {
+	body, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	return r.Result, body
+}
+
+func (r OkOut) RawBody() (ResponseType, []byte) {
 	body, err := json.Marshal(r)
 	if err != nil {
 		panic(err)

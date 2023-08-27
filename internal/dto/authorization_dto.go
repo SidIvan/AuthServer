@@ -6,6 +6,7 @@ type AuthIn struct {
 	Login   string `json:"login"`
 	Service string `json:"service"`
 	Ruchka  string `json:"ruchka"`
+	Token   string `json:"token"`
 }
 
 type AuthOut struct {

@@ -11,16 +11,16 @@ import (
 )
 
 func NewExternalRouter() *mux.Router {
-	thisServiceName = utils.PMan.Get("this_service_name").(string)
+	ThisServiceName = utils.PMan.Get("this_service_name").(string)
 	router := mux.NewRouter()
 	router.
 		HandleFunc("/registration", registrationHandler).
 		Methods(http.MethodPost).
-		Headers("content-type", "application/json")
+		Headers("Content-Type", "application/json")
 	router.
 		HandleFunc("/authorization", authorizationHandler).
-		Methods(http.MethodGet).
-		Headers("content-type", "application/json",
+		Methods(http.MethodPost).
+		Headers("Content-Type", "application/json",
 			"Oauth", "")
 	return router
 }
@@ -28,20 +28,10 @@ func NewExternalRouter() *mux.Router {
 // TODO: test
 func authorizationHandler(w http.ResponseWriter, r *http.Request) {
 	var authInfo dto.AuthIn
-	body, err := io.ReadAll(r.Body)
-	if err != nil && err != io.EOF {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if !checkAuthAndParseBody(w, r, &authInfo, "") {
 		return
 	}
-	err = json.Unmarshal(body, &authInfo)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	tokenValue := r.Header.Get("Oauth")
-	rType, body := authorization(authInfo, tokenValue).RawBody()
+	rType, body := authorization(authInfo).RawBody()
 	if rType == dto.OkR {
 		w.WriteHeader(http.StatusOK)
 	} else {

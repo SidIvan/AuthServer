@@ -10,7 +10,11 @@ import (
 	"time"
 )
 
-var Db *mongo.Database
+var (
+	Db      *mongo.Database
+	session mongo.Session
+	client  *mongo.Client
+)
 
 const (
 	NUM_CONNECTION_RETRIES = 3
@@ -24,10 +28,9 @@ const (
 )
 
 func ConnectToMongo(ctx context.Context, uri string, dbName string) {
+	var err error
 	for i := 0; i < NUM_CONNECTION_RETRIES; i++ {
-		ctxConnect, cancel := context.WithTimeout(ctx, CONNECTION_TIMEOUT_SEC)
-		client, err := mongo.Connect(ctxConnect, options.Client().ApplyURI(uri))
-		cancel()
+		client, err = mongo.Connect(ctx, options.Client().ApplyURI(uri))
 		if err != nil {
 			log.Println(err)
 			continue
@@ -40,6 +43,7 @@ func ConnectToMongo(ctx context.Context, uri string, dbName string) {
 			continue
 		}
 		Db = client.Database(dbName)
+		session, err = client.StartSession()
 		accountCollection = Db.Collection(accountCollectionName)
 		groupCollection = Db.Collection(groupCollectionName)
 		serviceCollection = Db.Collection(serviceCollectionName)

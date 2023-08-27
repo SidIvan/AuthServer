@@ -20,7 +20,7 @@ func beforeServiceTest() {
 
 func TestIsServiceExists(t *testing.T) {
 	beforeServiceTest()
-	_, err := serviceCollection.InsertOne(context.Background(), ServiceInfo{Name: "service1"})
+	_, err := serviceCollection.InsertOne(context.Background(), Service{Name: "service1"})
 	if err != nil {
 		t.Errorf("Service1 creation fail")
 	}
@@ -46,12 +46,12 @@ func TestCreateService(t *testing.T) {
 	if id != "" || (err != nil && err.Error() != "service \"service1\" already exists") {
 		t.Errorf("wrong already exists service return format")
 	}
-	var service ServiceInfo
+	var service Service
 	err = serviceCollection.FindOne(context.Background(), bson.D{{"Name", "service1"}}).Decode(&service)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if !reflect.DeepEqual(service, ServiceInfo{
+	if !reflect.DeepEqual(service, Service{
 		Name:    "service1",
 		BaseUri: "baseUri1",
 	}) {
@@ -61,7 +61,7 @@ func TestCreateService(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	if !reflect.DeepEqual(service, ServiceInfo{
+	if !reflect.DeepEqual(service, Service{
 		Name:    "service2",
 		BaseUri: "baseUri2",
 	}) {
@@ -71,10 +71,10 @@ func TestCreateService(t *testing.T) {
 
 func TestFindService(t *testing.T) {
 	beforeServiceTest()
-	services := make(map[string]ServiceInfo)
+	services := make(map[string]Service)
 	for i := 1; i < 4; i++ {
 		serviceName := fmt.Sprintf("service%d", i)
-		services[serviceName] = ServiceInfo{
+		services[serviceName] = Service{
 			Name:            serviceName,
 			BaseUri:         fmt.Sprintf("baseUri%d", i),
 			AllowedAccounts: []string{fmt.Sprintf("acc1_%d", i), fmt.Sprintf("acc2_%d", i)},
@@ -111,7 +111,7 @@ func TestFindService(t *testing.T) {
 
 func TestAddRuchka(t *testing.T) {
 	beforeServiceTest()
-	service := ServiceInfo{
+	service := Service{
 		Name:            "serviceName",
 		BaseUri:         "baseUri",
 		AllowedAccounts: []string{"acc1", "acc2"},
@@ -146,7 +146,7 @@ func TestAddRuchka(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	var res ServiceInfo
+	var res Service
 	err = serviceCollection.FindOne(context.Background(), bson.D{{"Name", service.Name}}).Decode(&res)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -181,7 +181,7 @@ func TestDeleteRuchka(t *testing.T) {
 			AllowedGroups:   []string{"gr1", "gr2"},
 		},
 	}
-	services := []ServiceInfo{
+	services := []Service{
 		{
 			Name:            "service1",
 			BaseUri:         "baseUri1",
@@ -206,7 +206,7 @@ func TestDeleteRuchka(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	var service ServiceInfo
+	var service Service
 	res := serviceCollection.FindOne(context.Background(), bson.D{{"Name", "service1"}})
 	if res.Err() != nil {
 		t.Errorf(res.Err().Error())
