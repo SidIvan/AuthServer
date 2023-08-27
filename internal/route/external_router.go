@@ -10,9 +10,8 @@ import (
 	"net/http"
 )
 
-func NewExternalRouter() *mux.Router {
+func NewExternalRouter(router *mux.Router) {
 	ThisServiceName = utils.PMan.Get("this_service_name").(string)
-	router := mux.NewRouter()
 	router.
 		HandleFunc("/registration", registrationHandler).
 		Methods(http.MethodPost).
@@ -22,7 +21,6 @@ func NewExternalRouter() *mux.Router {
 		Methods(http.MethodPost).
 		Headers("Content-Type", "application/json",
 			"Oauth", "")
-	return router
 }
 
 // TODO: test

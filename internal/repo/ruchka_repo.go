@@ -11,11 +11,11 @@ import (
 
 // TODO: change slices to sets
 type Ruchka struct {
-	Name            string
-	Uri             string
-	Method          string
-	AllowedAccounts []string
-	AllowedGroups   []string
+	Name            string   `json:"name"`
+	Uri             string   `json:"URI"`
+	Method          string   `json:"method"`
+	AllowedAccounts []string `json:"allowed accounts"`
+	AllowedGroups   []string `json:"allowed groups"`
 }
 
 // TODO: test

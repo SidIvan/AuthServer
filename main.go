@@ -6,6 +6,7 @@ import (
 	"AuthServer/internal/utils"
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -14,10 +15,12 @@ func main() {
 	ctx := context.Background()
 	repo.ConnectToMongo(ctx, "mongodb://"+utils.PMan.Get("mongo_host").(string)+":"+utils.PMan.Get("mongo_port").(string), utils.PMan.Get("mongo_db_name").(string))
 	repo.DropDb()
-	extRouter := route.NewExternalRouter()
-	http.Handle("/", extRouter)
-	serviceRouter := route.NewServiceRouter()
-	http.Handle("/service", serviceRouter)
+	router := mux.NewRouter()
+	route.NewExternalRouter(router)
+	route.NewServiceRouter(router)
+	http.Handle("/", router)
+	//serviceRouter := route.NewServiceRouter()
+	//http.Handle("/service", serviceRouter)
 	repo.CreateAccount("DrLivesey", "Rum")
 	repo.CreateService(utils.PMan.Get("this_service_name").(string), "")
 	fmt.Println(repo.CreateAccess(repo.Payload{
@@ -39,9 +42,31 @@ func defaultRuchkas() {
 		AllowedGroups:   nil,
 	})
 	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "ServiceInfo",
+		Uri:             "/service/info/{serviceName}",
+		Method:          http.MethodGet,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
 		Name:            "DeleteService",
 		Uri:             "/service/delete",
 		Method:          http.MethodDelete,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "AddRuchka",
+		Uri:             "/addRuchka",
+		Method:          http.MethodPut,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "DeleteRuchka",
+		Uri:             "/deleteRuchka",
+		Method:          http.MethodPut,
 		AllowedAccounts: []string{"DrLivesey"},
 		AllowedGroups:   nil,
 	})

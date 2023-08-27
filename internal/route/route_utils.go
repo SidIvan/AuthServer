@@ -9,12 +9,16 @@ import (
 )
 
 // TODO: test
-func checkAuthAndParseBody(w http.ResponseWriter, r *http.Request, bodyHandler interface{}, ruchkaName string) bool {
+func checkAuth(w http.ResponseWriter, r *http.Request, ruchkaName string) bool {
 	tokenValue := r.Header.Get("Oauth")
 	if !isAllowed(tokenValue, ruchkaName) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return false
 	}
+	return true
+}
+
+func parseBody(w http.ResponseWriter, r *http.Request, bodyHandler interface{}) bool {
 	body, err := io.ReadAll(r.Body)
 	if err != nil && err != io.EOF {
 		log.Println(err)
@@ -28,6 +32,14 @@ func checkAuthAndParseBody(w http.ResponseWriter, r *http.Request, bodyHandler i
 		return false
 	}
 	return true
+}
+
+// TODO: test
+func checkAuthAndParseBody(w http.ResponseWriter, r *http.Request, bodyHandler interface{}, ruchkaName string) bool {
+	if !checkAuth(w, r, ruchkaName) {
+		return false
+	}
+	return parseBody(w, r, bodyHandler)
 }
 
 // TODO: test

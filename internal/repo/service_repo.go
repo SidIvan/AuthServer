@@ -15,11 +15,11 @@ var serviceCollection *mongo.Collection
 
 // TODO: change slices to sets
 type Service struct {
-	Name            string   `bson:"Name"`
-	BaseUri         string   `bson:"BaseUri"`
-	AllowedAccounts []string `bson:"AllowedAccounts"`
-	AllowedGroups   []string `bson:"AllowedGroups"`
-	Ruchkas         []Ruchka `bson:"Ruchkas"`
+	Name            string   `bson:"Name" json:"name"`
+	BaseUri         string   `bson:"BaseUri" json:"base URI"`
+	AllowedAccounts []string `bson:"AllowedAccounts" json:"allowed accounts"`
+	AllowedGroups   []string `bson:"AllowedGroups" json:"allowed groups"`
+	Ruchkas         []Ruchka `bson:"Ruchkas" json:"ruchkas"`
 }
 
 func isServiceExist(name string) bool {
