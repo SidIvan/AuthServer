@@ -78,7 +78,6 @@ func CreateTokenWithCustomTtl(payload Payload, ttl int64, tokenType TokenType) (
 	if tokenType == Access {
 		collection = accessCollection
 	}
-	fmt.Println(collection)
 	if !isAccountExist(payload.Login) || !isServiceExist(payload.Service) {
 		return "", ErrInvalidPayload(payload)
 	}

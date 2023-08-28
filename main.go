@@ -18,6 +18,7 @@ func main() {
 	router := mux.NewRouter()
 	route.NewExternalRouter(router)
 	route.NewServiceRouter(router)
+	route.TokenRouterConfig(router)
 	http.Handle("/", router)
 	//serviceRouter := route.NewServiceRouter()
 	//http.Handle("/service", serviceRouter)
@@ -123,6 +124,27 @@ func defaultRuchkas() {
 		Name:            "DisallowGroupToRuchka",
 		Uri:             "/service/disallowGroupRuchka",
 		Method:          http.MethodPut,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "CreateRefresh",
+		Uri:             "/refresh/create",
+		Method:          http.MethodPost,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "UpdateRefresh",
+		Uri:             "/refresh/update",
+		Method:          http.MethodPatch,
+		AllowedAccounts: []string{"DrLivesey"},
+		AllowedGroups:   nil,
+	})
+	repo.AddRuchka(route.ThisServiceName, repo.Ruchka{
+		Name:            "ValidateRefresh",
+		Uri:             "/refresh/validate/{token}",
+		Method:          http.MethodGet,
 		AllowedAccounts: []string{"DrLivesey"},
 		AllowedGroups:   nil,
 	})
